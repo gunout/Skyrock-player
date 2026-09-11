@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyrock Paris - Interface HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
+    <style>
+        :root {
+            --primary-color: #ff3b3b;
+            --secondary-color: #ff9e00;
+            --alert-color: #ff2a6d;
+            --dab-color: #00f3ff;
+            --bg-dark: #050505;
+        }
+
+        * { margin: auto; padding: revert-layer; box-sizing: border-box; }
+
+        body {
+            height: 100vh;
+            background-color: var(--bg-dark);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        /* ============================================
+           SLICK CAROUSEL PLEIN ÉCRAN EN ARRIÈRE-PLAN
+           ============================================ */
+        .bg-carousel-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -3;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-carousel { width: 100vw; height: 100vh; }
+
+        .bg-carousel .slide-item {
+            width: 100vw; height: 100vh;
+            position: relative; overflow: hidden;
+        }
+
+        .bg-carousel .slide-item img {
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
+            filter: brightness(30%) contrast(115%) saturate(120%);
+            display: block;
+        }
+
+        .bg-carousel .slide-item::after {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(5, 5, 5, 0.3) 0%,
+                rgba(5, 5, 5, 0.7) 50%,
+                rgba(5, 5, 5, 0.95) 100%
+            );
+            pointer-events: none;
+        }
+
+        .bg-fallback {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: -4;
+            background: 
+                radial-gradient(circle at 30% 40%, rgba(255, 59, 59, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(255, 158, 0, 0.1) 0%, transparent 50%),
+                var(--bg-dark);
+        }
+
+        .bg-carousel .slick-prev,
+        .bg-carousel .slick-next,
+        .bg-carousel .slick-dots { display: none !important; }
+
+        .bg-carousel .slick-slide {
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out;
+        }
+
+        .bg-carousel .slick-slide.slick-active { opacity: 1; }
+
+        .bg-carousel .slick-list,
+        .bg-carousel .slick-track { height: 100vh !important; }
+
+        /* --- GRILLE HUD --- */
+        .grid-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: -1;
+            background: 
+                linear-gradient(transparent 0%, rgba(255, 59, 59, 0.05) 2%, transparent 3%),
+                linear-gradient(90deg, transparent 0%, rgba(255, 59, 59, 0.05) 2%, transparent 3%);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+
+        /* --- HUD PRINCIPAL --- */
+        .hud-container {
+            position: relative;
+            width: 400px; height: 400px;
+            display: flex;
+            justify-content: center; align-items: center;
+            z-index: 100;
+        }
+
+        .orbit-ring {
+            position: absolute; border-radius: 50%;
+            border: 1px solid rgba(255, 59, 59, 0.3);
+        }
+
+        .ring-1 { width: 100%; height: 100%; border-style: dashed; animation: spin 20s linear infinite; }
+        .ring-2 { width: 85%; height: 85%; border: 2px solid rgba(255, 158, 0, 0.2); border-top-color: var(--secondary-color); animation: spin-reverse 15s linear infinite; }
+        .ring-3 { width: 70%; height: 70%; border-left-color: var(--primary-color); border-right-color: transparent; border-width: 1px; animation: spin 10s linear infinite; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        .core-player {
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(255, 59, 59, 0.4) 0%, rgba(5, 5, 5, 0.9) 100%);
+            border: 1px solid rgba(255, 59, 59, 0.5);
+            box-shadow: 0 0 50px rgba(255, 59, 59, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.8);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; backdrop-filter: blur(8px);
+        }
+
+        .core-player::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 2px; background: rgba(255, 59, 59, 0.5);
+            box-shadow: 0 0 10px var(--primary-color);
+            animation: scan-line 3s ease-in-out infinite; opacity: 0.5;
+        }
+
+        @keyframes scan-line {
+            0% { top: 0%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .station-logo {
+            width: 110px; height: auto; margin-bottom: 8px;
+            filter: drop-shadow(0 0 10px var(--primary-color)) drop-shadow(0 0 20px rgba(255, 59, 59, 0.6));
+            animation: logo-pulse 3s ease-in-out infinite; z-index: 5;
+        }
+
+        @keyframes logo-pulse {
+            0%, 100% { 
+                filter: drop-shadow(0 0 10px var(--primary-color)) drop-shadow(0 0 20px rgba(255, 59, 59, 0.6));
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px var(--primary-color)) drop-shadow(0 0 30px rgba(255, 59, 59, 0.9));
+                transform: scale(1.03);
+            }
+        }
+
+        .sub-id {
+            font-size: 0.7rem; color: var(--primary-color);
+            margin-bottom: 20px; letter-spacing: 2px; z-index: 5;
+        }
+
+        .circular-visualizer {
+            width: 180px; height: 180px;
+            position: absolute; top: 60px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; justify-content: center; gap: 4px;
+            opacity: 0.8; pointer-events: none;
+        }
+
+        .bar-c {
+            width: 3px; height: 20px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            box-shadow: 0 0 5px var(--primary-color);
+            animation: bar-dance 1.2s ease-in-out infinite;
+        }
+        
+        .bar-c:nth-child(odd) { animation-delay: 0.4s; background: var(--secondary-color); box-shadow: 0 0 5px var(--secondary-color); }
+        .bar-c:nth-child(3n) { animation-delay: 0.2s; }
+
+        .paused-anim .bar-c { animation: none; height: 5px; opacity: 0.2; }
+
+        @keyframes bar-dance {
+            0%, 100% { height: 10px; transform: scaleY(1); }
+            50% { height: 40px; transform: scaleY(1.5); }
+        }
+
+        .play-btn-container { margin-top: 130px; z-index: 10; }
+
+        .play-btn {
+            width: 60px; height: 60px;
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%; cursor: pointer;
+            position: relative; transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 59, 59, 0.2);
+        }
+
+        .play-btn:hover {
+            background: rgba(255, 59, 59, 0.1);
+            box-shadow: 0 0 30px rgba(255, 59, 59, 0.6);
+            transform: scale(1.1);
+        }
+
+        .play-btn::after {
+            content: '';
+            position: absolute; top: 50%; left: 55%;
+            transform: translate(-50%, -50%);
+            border-style: solid;
+            border-width: 10px 0 10px 18px;
+            border-color: transparent transparent transparent var(--primary-color);
+            transition: all 0.2s;
+        }
+
+        .play-btn.active {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 30px rgba(255, 158, 0, 0.6);
+        }
+
+        .play-btn.active::after {
+            border-width: 0; width: 15px; height: 20px;
+            border-left: 5px solid var(--secondary-color);
+            border-right: 5px solid var(--secondary-color);
+            border-color: transparent; background: transparent; left: 50%;
+        }
+
+        .data-readout {
+            bottom: 50px; width: 100%;
+            display: flex; justify-content: space-around;
+            font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);
+        }
+
+        .data-block { display: flex; flex-direction: column; align-items: center; }
+        .data-value { color: var(--primary-color); font-weight: bold; font-size: 0.9rem; }
+
+        .volume-hud {
+            position: absolute; bottom: -40px; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .volume-track {
+            width: 150px; height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative; border-radius: 2px; overflow: hidden;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 150px; height: 4px;
+            background: transparent; cursor: pointer;
+            position: absolute; top: 0; left: 0; z-index: 2;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 8px; height: 8px;
+            background: #fff; border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-color);
+            cursor: pointer;
+        }
+
+        .volume-fill {
+            height: 100%; background: var(--primary-color);
+            width: 70%; pointer-events: none;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .ico { color: var(--primary-color); font-size: 1.2rem; }
+
+        .corner-deco {
+            position: fixed; width: 100px; height: 100px;
+            border: 2px solid rgba(255, 59, 59, 0.2);
+            pointer-events: none; z-index: 50;
+        }
+        .top-left { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .top-right { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .bottom-left { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .bottom-right { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        /* --- TOP RIGHT BUTTONS --- */
+        .top-right-controls {
+            position: fixed; top: 40px; right: 40px;
+            z-index: 100; display: flex; gap: 10px;
+        }
+
+        .site-link, .stations-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            text-decoration: none; cursor: pointer;
+            color: var(--primary-color);
+            background: rgba(5, 5, 5, 0.6);
+            border: 1px solid var(--primary-color);
+            border-radius: 2px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 59, 59, 0.2);
+        }
+
+        .site-link::before, .stations-btn::before {
+            content: '';
+            width: 6px; height: 6px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary-color);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        .site-link:hover, .stations-btn:hover {
+            color: #fff;
+            background: rgba(255, 59, 59, 0.15);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 25px rgba(255, 59, 59, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .site-link:hover::before, .stations-btn:hover::before {
+            background: var(--secondary-color);
+            box-shadow: 0 0 10px var(--secondary-color);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* --- BOUTON REPLAYS (variante orange) --- */
+        .replay-btn {
+            border-color: var(--secondary-color) !important;
+            color: var(--secondary-color) !important;
+        }
+
+        .replay-btn::before {
+            background: var(--secondary-color) !important;
+            box-shadow: 0 0 8px var(--secondary-color) !important;
+        }
+
+        .replay-btn:hover {
+            color: #fff !important;
+            background: rgba(255, 158, 0, 0.15) !important;
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 25px rgba(255, 158, 0, 0.6) !important;
+        }
+
+        .replay-btn:hover::before {
+            background: var(--primary-color) !important;
+            box-shadow: 0 0 10px var(--primary-color) !important;
+        }
+
+        /* --- STATIONS PANEL --- */
+        .stations-panel {
+            position: fixed; top: 0; right: -420px;
+            width: 400px; height: 100vh;
+            background: rgba(5, 5, 5, 0.95);
+            border-left: 1px solid var(--primary-color);
+            backdrop-filter: blur(15px);
+            z-index: 300;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            box-shadow: -10px 0 40px rgba(255, 59, 59, 0.2);
+        }
+
+        .stations-panel.open { right: 0; }
+
+        .stations-header {
+            padding: 25px 20px 15px;
+            border-bottom: 1px solid rgba(255, 59, 59, 0.3);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .stations-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem; letter-spacing: 3px;
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        .stations-close {
+            background: transparent; border: 1px solid var(--primary-color);
+            color: var(--primary-color); width: 30px; height: 30px;
+            border-radius: 50%; cursor: pointer;
+            font-size: 1rem; line-height: 1;
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .stations-close:hover {
+            background: var(--primary-color); color: #000;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        /* --- COMPTEUR TOTAL --- */
+        .stations-total {
+            padding: 12px 20px;
+            background: rgba(255, 59, 59, 0.08);
+            border-bottom: 1px solid rgba(255, 59, 59, 0.2);
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        .stations-total strong { color: #fff; font-weight: 900; }
+
+        .stations-search { padding: 15px 20px; }
+
+        .stations-search input {
+            width: 100%; padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 59, 59, 0.3);
+            border-radius: 4px; color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem; outline: none;
+            transition: all 0.3s;
+        }
+
+        .stations-search input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.3);
+        }
+
+        .stations-search input::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+        /* --- FILTRE DÉPARTEMENT --- */
+        .dept-filter-wrapper { padding: 0 20px 15px; }
+
+        .dept-filter-wrapper select {
+            width: 100%; padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 59, 59, 0.3);
+            border-radius: 4px; color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem; letter-spacing: 1px;
+            outline: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dept-filter-wrapper select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.3);
+        }
+
+        .dept-filter-wrapper select option {
+            background: #050505; color: #fff;
+        }
+
+        .stations-list {
+            flex: 1; overflow-y: auto;
+            padding: 0 20px 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+        }
+
+        .stations-list::-webkit-scrollbar { width: 4px; }
+        .stations-list::-webkit-scrollbar-track { background: transparent; }
+        .stations-list::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 2px; }
+
+        /* --- COMPTEUR FILTRÉ --- */
+        .stations-counter {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+            padding: 5px 0 15px;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        /* --- LIGNE STATION --- */
+        .station-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; margin-bottom: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 59, 59, 0.1);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .station-row:hover {
+            background: rgba(255, 59, 59, 0.1);
+            border-color: rgba(255, 59, 59, 0.4);
+            transform: translateX(-3px);
+        }
+
+        .station-left {
+            display: flex; align-items: center;
+            gap: 10px; flex: 1; min-width: 0;
+        }
+
+        .station-dept {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 32px; height: 22px; padding: 0 6px;
+            background: rgba(255, 59, 59, 0.15);
+            border: 1px solid rgba(255, 59, 59, 0.4);
+            border-radius: 3px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem; font-weight: 700;
+            color: var(--primary-color);
+            letter-spacing: 1px; flex-shrink: 0;
+        }
+
+        .station-city {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem; letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.9);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        .station-right {
+            display: flex; align-items: center;
+            gap: 8px; flex-shrink: 0;
+        }
+
+        .station-freq {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 8px rgba(255, 59, 59, 0.6);
+            white-space: nowrap;
+        }
+
+        /* --- BADGE DAB+ (CYAN) --- */
+        .dab-badge {
+            display: inline-block; padding: 2px 6px;
+            background: rgba(0, 243, 255, 0.15);
+            border: 1px solid rgba(0, 243, 255, 0.5);
+            border-radius: 3px;
+            font-size: 0.55rem;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--dab-color);
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.6);
+        }
+
+        /* --- BOUTON ÉCOUTER --- */
+        .listen-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px;
+            background: rgba(255, 59, 59, 0.15);
+            border: 1px solid var(--primary-color);
+            border-radius: 50%;
+            color: var(--primary-color);
+            cursor: pointer; transition: all 0.3s;
+            flex-shrink: 0; font-size: 0.7rem;
+        }
+
+        .listen-btn:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .listen-btn::after { content: '▶'; margin-left: 2px; }
+
+        /* --- PANNEAU REPLAYS (variante orange) --- */
+        .replays-panel {
+            border-left-color: var(--secondary-color) !important;
+            box-shadow: -10px 0 40px rgba(255, 158, 0, 0.2) !important;
+        }
+
+        .replays-panel .stations-header { border-bottom-color: rgba(255, 158, 0, 0.3) !important; }
+        .replays-panel .stations-header h2 { color: var(--secondary-color) !important; }
+        .replays-panel .stations-close {
+            border-color: var(--secondary-color) !important;
+            color: var(--secondary-color) !important;
+        }
+        .replays-panel .stations-close:hover {
+            background: var(--secondary-color) !important;
+            box-shadow: 0 0 15px var(--secondary-color) !important;
+        }
+        .replays-panel .stations-total {
+            background: rgba(255, 158, 0, 0.08) !important;
+            border-bottom-color: rgba(255, 158, 0, 0.2) !important;
+            color: var(--secondary-color) !important;
+        }
+
+        /* --- PANNEAU REPLAYS : REDIRECTION --- */
+        .replays-redirect-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            text-align: center;
+            gap: 20px;
+        }
+
+        .replays-redirect-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255, 158, 0, 0.3), rgba(255, 59, 59, 0.3));
+            border: 2px solid var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 
+                0 0 30px rgba(255, 158, 0, 0.5),
+                inset 0 0 20px rgba(255, 158, 0, 0.2);
+            animation: replays-icon-pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes replays-icon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 30px rgba(255, 158, 0, 0.5), inset 0 0 20px rgba(255, 158, 0, 0.2);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 45px rgba(255, 158, 0, 0.8), inset 0 0 25px rgba(255, 158, 0, 0.3);
+                transform: scale(1.05);
+            }
+        }
+
+        .replays-redirect-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255, 158, 0, 0.6);
+            margin: 0;
+        }
+
+        .replays-redirect-desc {
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+            max-width: 300px;
+            margin: 0;
+        }
+
+        .replays-redirect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: #000;
+            background: var(--secondary-color);
+            border: 2px solid var(--secondary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 25px rgba(255, 158, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .replays-redirect-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            transition: left 0.6s ease;
+        }
+
+        .replays-redirect-btn:hover::before {
+            left: 100%;
+        }
+
+        .replays-redirect-btn:hover {
+            color: #fff;
+            background: rgba(255, 158, 0, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 40px rgba(255, 158, 0, 0.9);
+            transform: translateY(-3px);
+        }
+
+        .replays-redirect-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .replays-arrow {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .replays-redirect-btn:hover .replays-arrow {
+            transform: translateX(5px);
+        }
+
+        .replays-redirect-note {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            margin: 0;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 158, 0, 0.2);
+            width: 100%;
+        }
+
+        /* --- WEBRADIO CAROUSEL (bas) --- */
+        .webradio-carousel {
+            position: fixed;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 12px;
+            padding: 10px 16px;
+            background: rgba(5, 5, 5, 0.7);
+            border: 1px solid rgba(255, 59, 59, 0.3);
+            border-radius: 4px;
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            overflow-x: auto;
+            max-width: 90vw;
+            scrollbar-width: none;
+        }
+
+        .webradio-carousel::-webkit-scrollbar { display: none; }
+
+        .webradio-item {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            padding: 8px 12px; cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            min-width: 80px; text-align: center;
+        }
+
+        .webradio-item:hover {
+            background: rgba(255, 59, 59, 0.1);
+            border-color: rgba(255, 59, 59, 0.3);
+        }
+
+        .webradio-item.active {
+            background: rgba(255, 59, 59, 0.15);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.4);
+        }
+
+        .webradio-item.active .webradio-name { color: #fff; }
+
+        .webradio-icon {
+            width: 32px; height: 32px;
+            border-radius: 50%; object-fit: cover;
+            border: 1px solid rgba(255, 59, 59, 0.3);
+        }
+
+        .webradio-item.active .webradio-icon {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .webradio-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.55rem; letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase; white-space: nowrap;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 600px) {
+            .top-right-controls {
+                top: 15px; right: 15px;
+                flex-direction: column; gap: 6px;
+            }
+            .site-link, .stations-btn {
+                font-size: 0.6rem; padding: 6px 10px;
+                letter-spacing: 1px;
+            }
+            .stations-panel { width: 100%; right: -100%; }
+            .webradio-carousel {
+                bottom: 15px; gap: 8px; padding: 8px 12px;
+            }
+            .webradio-item { min-width: 65px; padding: 6px 8px; }
+            .webradio-name { font-size: 0.45rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fallback -->
+    <div class="bg-fallback"></div>
+
+    <!-- Slick Carousel PLEIN ÉCRAN en arrière-plan -->
+    <div class="bg-carousel-wrapper">
+        <div class="bg-carousel" id="bg-carousel"></div>
+    </div>
+
+    <div class="grid-overlay"></div>
+
+    <audio id="radio-stream" preload="none">
+        <source id="audio-source" src="https://icecast.skyrock.net/s/natio_mp3_128k" type="audio/mpeg">
+    </audio>
+
+    <!-- Boutons en haut à droite -->
+    <div class="top-right-controls">
+        <a href="https://skyrock.fm" target="_blank" rel="noopener noreferrer" class="site-link">
+            skyrock.fm
+        </a>
+        <button class="stations-btn replay-btn" id="replays-toggle">
+            Replays
+        </button>
+        <button class="stations-btn" id="stations-toggle">
+            Stations FM
+        </button>
+    </div>
+
+    <!-- Panneau des stations FM -->
+    <div class="stations-panel" id="stations-panel">
+        <div class="stations-header">
+            <h2>📻 Stations FM</h2>
+            <button class="stations-close" id="stations-close">✕</button>
+        </div>
+        <div class="stations-total" id="stations-total"></div>
+        <div class="stations-search">
+            <input type="text" id="station-search" placeholder="Rechercher une ville...">
+        </div>
+        <div class="stations-list" id="stations-list"></div>
+    </div>
+
+    <!-- Panneau des Replays (redirection) -->
+    <div class="stations-panel replays-panel" id="replays-panel">
+        <div class="stations-header">
+            <h2>🎙️ Replays</h2>
+            <button class="stations-close" id="replays-close">✕</button>
+        </div>
+        <div class="stations-total">
+            <strong>26 000+</strong> émissions disponibles
+        </div>
+        <div class="replays-redirect-wrapper">
+            <div class="replays-redirect-icon">🎧</div>
+            <h3 class="replays-redirect-title">Tous les replays Skyrock</h3>
+            <p class="replays-redirect-desc">
+                Accède à l'intégralité des podcasts et replays des émissions Skyrock :
+                Difool – Radio Libre, Planète Rap, le Morning, et bien plus encore.
+            </p>
+            <a href="https://skyrock.fm/replay" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="replays-redirect-btn">
+                Ouvrir skyrock.fm/replay
+                <span class="replays-arrow">→</span>
+            </a>
+            <p class="replays-redirect-note">
+                🔄 La liste est mise à jour automatiquement par Skyrock
+            </p>
+        </div>
+    </div>
+
+    <div class="corner-deco top-left"></div>
+    <div class="corner-deco top-right"></div>
+    <div class="corner-deco bottom-left"></div>
+    <div class="corner-deco bottom-right"></div>
+
+    <!-- HUD principal -->
+    <div class="hud-container" id="visualizer-container">
+        <div class="orbit-ring ring-1"></div>
+        <div class="orbit-ring ring-2"></div>
+        <div class="orbit-ring ring-3"></div>
+
+        <div class="core-player">
+            <img 
+                class="station-logo" 
+                id="station-logo"
+                alt="Skyrock" 
+                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'><text x='100' y='42' text-anchor='middle' font-family='Arial Black, Arial, sans-serif' font-weight='900' font-size='38' fill='%23ffffff' letter-spacing='-1'>SKYROCK</text></svg>"
+            >
+            <div class="sub-id" id="status-text">SYS.OFFLINE</div>
+
+            <div class="circular-visualizer" id="viz-bars"></div>
+
+            <div class="play-btn-container">
+                <button class="play-btn" id="play-pause"></button>
+            </div>
+
+            <div class="data-readout">
+                <div class="data-block">
+                    <span class="data-value" id="bitrate">128</span>
+                    <span>KBS</span>
+                </div>
+                <div class="data-block">
+                    <span class="data-value" id="freq">98.0</span>
+                    <span>FM</span>
+                </div>
+                <div class="data-block">
+                    <span class="data-value" id="latency">12</span>
+                    <span>MS</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="volume-hud">
+            <span class="ico">−</span>
+            <div class="volume-track">
+                <input type="range" id="volume-control" min="0" max="1" step="0.01" value="0.7">
+                <div class="volume-fill" id="vol-fill"></div>
+            </div>
+            <span class="ico">+</span>
+        </div>
+    </div>
+
+    <div class="webradio-carousel" id="webradio-carousel"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+    <script>
+        const audio = document.getElementById('radio-stream');
+        const audioSource = document.getElementById('audio-source');
+        const playBtn = document.getElementById('play-pause');
+        const statusText = document.getElementById('status-text');
+        const vizBars = document.getElementById('viz-bars');
+        const volFill = document.getElementById('vol-fill');
+        const volumeControl = document.getElementById('volume-control');
+        const carousel = document.getElementById('webradio-carousel');
+        const bgCarousel = document.getElementById('bg-carousel');
+        const stationsToggle = document.getElementById('stations-toggle');
+        const stationsPanel = document.getElementById('stations-panel');
+        const stationsClose = document.getElementById('stations-close');
+        const stationsList = document.getElementById('stations-list');
+        const stationSearch = document.getElementById('station-search');
+        const stationsTotal = document.getElementById('stations-total');
+
+        // --- PANNEAU REPLAYS : REDIRECTION ---
+        const replaysToggle = document.getElementById('replays-toggle');
+        const replaysPanel = document.getElementById('replays-panel');
+        const replaysClose = document.getElementById('replays-close');
+
+        // --- LISTE COMPLÈTE DES FRÉQUENCES ---
+        const fmStations = [
+            // 01 - Ain
+            { dept: '01', city: 'Belley', freq: '97.2 FM' },
+            { dept: '01', city: 'Bourg-en-Bresse', freq: '106.5 FM' },
+            { dept: '01', city: 'Charix', freq: 'DAB+' },
+            { dept: '01', city: 'Les Neyrolles', freq: 'DAB+' },
+            { dept: '01', city: 'Maillat', freq: 'DAB+' },
+            { dept: '01', city: 'Nantua', freq: '97.5 FM' },
+            { dept: '01', city: 'Oyonnax', freq: '96.1 FM' },
+            { dept: '01', city: 'Poncin', freq: 'DAB+' },
+            { dept: '01', city: 'Valserhône', freq: '95.5 FM' },
+            // 02 - Aisne
+            { dept: '02', city: 'Château-Thierry', freq: 'DAB+' },
+            { dept: '02', city: 'Laon', freq: 'DAB+' },
+            { dept: '02', city: 'Saint-Quentin', freq: '98.3 FM' },
+            { dept: '02', city: 'Soissons', freq: '96.1 FM' },
+            // 03 - Allier
+            { dept: '03', city: 'Gannat', freq: 'DAB+' },
+            { dept: '03', city: 'Montluçon', freq: '98 FM' },
+            { dept: '03', city: 'Montmarault', freq: 'DAB+' },
+            { dept: '03', city: 'Moulins', freq: '98 FM' },
+            { dept: '03', city: 'Vichy', freq: '99.2 FM' },
+            // 04 - Alpes-de-Haute-Provence
+            { dept: '04', city: 'Barcelonnette', freq: '106.6 FM' },
+            { dept: '04', city: 'Digne-les-Bains', freq: '91.1 FM' },
+            { dept: '04', city: 'Manosque', freq: '101.1 FM' },
+            // 05 - Hautes-Alpes
+            { dept: '05', city: 'Briançon', freq: '92.9 FM' },
+            { dept: '05', city: 'Embrun', freq: '94.6 FM' },
+            { dept: '05', city: 'Gap', freq: '97.2 FM' },
+            { dept: '05', city: 'Puy-Saint-Vincent', freq: '103.6 FM' },
+            { dept: '05', city: 'Vars', freq: '88.3 FM' },
+            // 06 - Alpes-Maritimes
+            { dept: '06', city: 'Breil-sur-Roya', freq: '100.8 FM' },
+            { dept: '06', city: 'Cannes', freq: '107 FM' },
+            { dept: '06', city: 'La Brigue', freq: '102.4 FM' },
+            { dept: '06', city: 'Menton', freq: '102.1 FM' },
+            { dept: '06', city: 'Nice', freq: '107 FM' },
+            // 07 - Ardèche
+            { dept: '07', city: 'Annonay', freq: '96.3 FM' },
+            { dept: '07', city: 'Aubenas', freq: '95.9 FM' },
+            { dept: '07', city: 'Privas', freq: '95.9 FM' },
+            // 08 - Ardennes
+            { dept: '08', city: 'Charleville-Mézières', freq: '99.4 FM' },
+            { dept: '08', city: 'Revin', freq: '104 FM' },
+            { dept: '08', city: 'Sedan', freq: '99.5 FM' },
+            { dept: '08', city: 'Vouziers', freq: '107.2 FM' },
+            // 09 - Ariège
+            { dept: '09', city: 'Ax-les-Thermes', freq: '106.9 FM' },
+            { dept: '09', city: 'Foix', freq: '99.9 FM' },
+            { dept: '09', city: 'Saint-Girons', freq: '104.1 FM' },
+            { dept: '09', city: 'Tarascon-sur-Ariège', freq: '99.8 FM' },
+            // 10 - Aube
+            { dept: '10', city: 'Romilly-sur-Seine', freq: '94.6 FM' },
+            { dept: '10', city: 'Troyes', freq: '105.9 FM' },
+            // 11 - Aude
+            { dept: '11', city: 'Carcassonne', freq: '94.8 FM' },
+            { dept: '11', city: 'Castelnaudary', freq: '87.6 FM' },
+            { dept: '11', city: 'Durban-Corbières', freq: 'DAB+' },
+            { dept: '11', city: 'Limoux', freq: '95.6 FM' },
+            { dept: '11', city: 'Narbonne', freq: '94.9 FM' },
+            { dept: '11', city: 'Treilles', freq: 'DAB+' },
+            // 12 - Aveyron
+            { dept: '12', city: 'Belmont-sur-Rance', freq: '98.8 FM' },
+            { dept: '12', city: 'Cassagnes-Bégonhès', freq: '105.7 FM' },
+            { dept: '12', city: 'Decazeville', freq: '91.6 FM' },
+            { dept: '12', city: 'Millau', freq: '102.4 FM' },
+            { dept: '12', city: 'Rodez', freq: '92.9 FM' },
+            { dept: '12', city: 'Saint-Affrique', freq: '102.3 FM' },
+            { dept: '12', city: 'Villefranche-de-Rouergue', freq: '91.6 FM' },
+            // 13 - Bouches-du-Rhône
+            { dept: '13', city: 'Aix-en-Provence', freq: '90 FM' },
+            { dept: '13', city: 'Aubagne', freq: 'DAB+' },
+            { dept: '13', city: 'Fos sur Mer', freq: '97.1 FM' },
+            { dept: '13', city: 'Marseille', freq: '90 FM' },
+            { dept: '13', city: 'Roquevaire', freq: 'DAB+' },
+            { dept: '13', city: 'Salon-de-Provence', freq: 'DAB+' },
+            { dept: '13', city: 'Trets', freq: 'DAB+' },
+            { dept: '13', city: 'Velaux', freq: 'DAB+' },
+            // 14 - Calvados
+            { dept: '14', city: 'Caen', freq: '97.6 FM' },
+            { dept: '14', city: 'Deauville', freq: 'DAB+' },
+            { dept: '14', city: 'Honfleur', freq: 'DAB+' },
+            { dept: '14', city: 'Pont-l\'Évêque', freq: 'DAB+' },
+            // 15 - Cantal
+            { dept: '15', city: 'Aurillac', freq: '97.6 FM' },
+            { dept: '15', city: 'Mauriac', freq: '94.8 FM' },
+            { dept: '15', city: 'Saint-Flour', freq: '96.5 FM' },
+            // 16 - Charente
+            { dept: '16', city: 'Angoulême', freq: '103.1 FM' },
+            { dept: '16', city: 'Barbezieux-Saint-Hilaire', freq: 'DAB+' },
+            { dept: '16', city: 'Cognac', freq: 'DAB+' },
+            { dept: '16', city: 'Mainxe-Gondeville', freq: 'DAB+' },
+            { dept: '16', city: 'Touvérac', freq: 'DAB+' },
+            // 17 - Charente-Maritime
+            { dept: '17', city: 'Ile-d\'Oleron', freq: 'DAB+' },
+            { dept: '17', city: 'La Rochelle', freq: '102 FM' },
+            { dept: '17', city: 'Mazeray', freq: 'DAB+' },
+            { dept: '17', city: 'Montlieu-la-Garde', freq: 'DAB+' },
+            { dept: '17', city: 'Rochefort', freq: 'DAB+' },
+            { dept: '17', city: 'Royan', freq: '93.1 FM' },
+            { dept: '17', city: 'Saint-Jean-d\'Angély', freq: 'DAB+' },
+            { dept: '17', city: 'Saintes', freq: 'DAB+' },
+            { dept: '17', city: 'Semoussac', freq: 'DAB+' },
+            // 18 - Cher
+            { dept: '18', city: 'Bourges', freq: '87.7 FM' },
+            { dept: '18', city: 'Saint-Amand-Montrond', freq: 'DAB+' },
+            { dept: '18', city: 'Vierzon', freq: 'DAB+' },
+            // 19 - Corrèze
+            { dept: '19', city: 'Argentat-sur-Dordogne', freq: '91.3 FM' },
+            { dept: '19', city: 'Brive-la-Gaillarde', freq: '96.8 FM' },
+            { dept: '19', city: 'Tulle', freq: '88.5 FM' },
+            { dept: '19', city: 'Ussel', freq: '89.2 FM' },
+            { dept: '19', city: 'Uzerche', freq: '96.9 FM' },
+            // 2A - Corse-du-Sud
+            { dept: '2A', city: 'Ajaccio', freq: '98.1 FM' },
+            { dept: '2A', city: 'Bocognano', freq: '92.7 FM' },
+            { dept: '2A', city: 'Bonifacio', freq: '105.7 FM' },
+            { dept: '2A', city: 'Porto-Vecchio', freq: '88.6 FM' },
+            { dept: '2A', city: 'Propriano', freq: '97.2 FM' },
+            { dept: '2A', city: 'Vivario', freq: '102 FM' },
+            // 2B - Haute-Corse
+            { dept: '2B', city: 'Aiti', freq: '89.7 FM' },
+            { dept: '2B', city: 'Bastia', freq: '89.7 FM' },
+            { dept: '2B', city: 'Corte', freq: '89.8 FM' },
+            // 21 - Côte-d'Or
+            { dept: '21', city: 'Arnay-le-Duc', freq: 'DAB+' },
+            { dept: '21', city: 'Beaune', freq: '89.8 FM' },
+            { dept: '21', city: 'Dijon', freq: '107.1 FM' },
+            { dept: '21', city: 'Époisses', freq: 'DAB+' },
+            { dept: '21', city: 'Fleurey-sur-Ouche', freq: 'DAB+' },
+            { dept: '21', city: 'Is-sur-Tille', freq: 'DAB+' },
+            { dept: '21', city: 'Montbard', freq: '96.2 FM' },
+            { dept: '21', city: 'Selongey', freq: 'DAB+' },
+            { dept: '21', city: 'Thorey-sous-Charny', freq: 'DAB+' },
+            // 22 - Côtes-d'Armor
+            { dept: '22', city: 'Caulnes', freq: 'DAB+' },
+            { dept: '22', city: 'Guerlédan', freq: '107.2 FM' },
+            { dept: '22', city: 'Guingamp', freq: '107.2 FM' },
+            { dept: '22', city: 'Lannion', freq: '101.6 FM' },
+            { dept: '22', city: 'Paimpol', freq: 'DAB+' },
+            { dept: '22', city: 'Plounérin', freq: 'DAB+' },
+            { dept: '22', city: 'Saint-Brieuc', freq: '107.3 FM' },
+            // 23 - Creuse
+            { dept: '23', city: 'Aubusson', freq: '99.2 FM' },
+            { dept: '23', city: 'Guéret', freq: '102.3 FM' },
+            // 24 - Dordogne
+            { dept: '24', city: 'Bergerac', freq: '101 FM' },
+            { dept: '24', city: 'Perigueux', freq: '101.6 FM' },
+            // 25 - Doubs
+            { dept: '25', city: 'Besançon', freq: '95.5 FM' },
+            { dept: '25', city: 'Montbéliard', freq: '97.3 FM' },
+            // 26 - Drôme
+            { dept: '26', city: 'Die', freq: '107.9 FM' },
+            { dept: '26', city: 'Montélimar', freq: '95.9 FM' },
+            { dept: '26', city: 'Saint-Nazaire-le-Désert', freq: '95.7 FM' },
+            { dept: '26', city: 'Valence', freq: '96 FM' },
+            // 27 - Eure
+            { dept: '27', city: 'Verneuil d\'Avre et d\'Iton', freq: '89.2 FM' },
+            { dept: '27', city: 'Bernay', freq: '89.1 FM' },
+            { dept: '27', city: 'Évreux', freq: '107.3 FM' },
+            { dept: '27', city: 'Louviers', freq: 'DAB+' },
+            { dept: '27', city: 'Pont-Audemer', freq: 'DAB+' },
+            // 28 - Eure-et-Loir
+            { dept: '28', city: 'Chartres', freq: '96.1 FM' },
+            { dept: '28', city: 'Châteaudun', freq: '96 FM' },
+            { dept: '28', city: 'Dreux', freq: '107.4 FM' },
+            { dept: '28', city: 'Nogent-le-Rotrou', freq: 'DAB+' },
+            // 29 - Finistère
+            { dept: '29', city: 'Brest', freq: '101.8 FM' },
+            { dept: '29', city: 'Châteaulin', freq: 'DAB+' },
+            { dept: '29', city: 'Concarneau', freq: '91.6 FM' },
+            { dept: '29', city: 'Morlaix', freq: '101.7 FM' },
+            { dept: '29', city: 'Quimper', freq: '93.4 FM' },
+            { dept: '29', city: 'Quimperlé', freq: '106.6 FM' },
+            { dept: '29', city: 'Riec-sur-Bélon', freq: 'DAB+' },
+            // 30 - Gard
+            { dept: '30', city: 'Alès', freq: '100.2 FM' },
+            { dept: '30', city: 'Bagnols-sur-Cèze', freq: '92.5 FM' },
+            { dept: '30', city: 'Nimes', freq: '92.6 FM' },
+            { dept: '30', city: 'Nîmes', freq: 'DAB+' },
+            { dept: '30', city: 'Vénéjan', freq: 'DAB+' },
+            // 31 - Haute-Garonne
+            { dept: '31', city: 'Avignonet-Lauragais', freq: 'DAB+' },
+            { dept: '31', city: 'Bagnères-de-Luchon', freq: '99.8 FM' },
+            { dept: '31', city: 'Grenade', freq: '104.9 FM' },
+            { dept: '31', city: 'Saint-Gaudens', freq: '91.9 FM' },
+            { dept: '31', city: 'Toulouse', freq: '100 FM' },
+            // 32 - Gers
+            { dept: '32', city: 'Auch', freq: '91.9 FM' },
+            // 33 - Gironde
+            { dept: '33', city: 'Arcachon', freq: '96 FM' },
+            { dept: '33', city: 'Bordeaux', freq: '102.8 FM' },
+            { dept: '33', city: 'Cézac', freq: 'DAB+' },
+            { dept: '33', city: 'Langon', freq: '103 FM' },
+            { dept: '33', city: 'Laruscade', freq: 'DAB+' },
+            { dept: '33', city: 'Lugos', freq: 'DAB+' },
+            { dept: '33', city: 'Mios', freq: 'DAB+' },
+            { dept: '33', city: 'Reignac', freq: 'DAB+' },
+            { dept: '33', city: 'Sainte-Gemme', freq: 'DAB+' },
+            // 34 - Hérault
+            { dept: '34', city: 'Béziers', freq: '100 FM' },
+            { dept: '34', city: 'Lodève', freq: '100.3 FM' },
+            { dept: '34', city: 'Montpellier', freq: '100.2 FM' },
+            { dept: '34', city: 'Saint-Pons-de-Thomières', freq: '90.2 FM' },
+            { dept: '34', city: 'Sète', freq: '100.2 FM' },
+            // 35 - Ille-et-Vilaine
+            { dept: '35', city: 'Bain-de-Bretagne', freq: 'DAB+' },
+            { dept: '35', city: 'Fougères', freq: '91.7 FM' },
+            { dept: '35', city: 'Rennes', freq: '88.9 FM' },
+            { dept: '35', city: 'Saint-Malo', freq: '107 FM' },
+            { dept: '35', city: 'Vitré', freq: 'DAB+' },
+            // 37 - Indre-et-Loire
+            { dept: '37', city: 'Monnaie', freq: 'DAB+' },
+            { dept: '37', city: 'Saint-Épain', freq: 'DAB+' },
+            { dept: '37', city: 'Tours', freq: '90.5 FM' },
+            // 38 - Isère
+            { dept: '38', city: 'Grenoble', freq: '96 FM' },
+            { dept: '38', city: 'La Mure', freq: '102.1 FM' },
+            { dept: '38', city: 'La Tour-du-Pin', freq: 'DAB+' },
+            { dept: '38', city: 'Les Deux Alpes', freq: '106 FM' },
+            { dept: '38', city: 'Pontcharra', freq: 'DAB+' },
+            { dept: '38', city: 'Roussillon', freq: '96.3 FM' },
+            { dept: '38', city: 'Vienne', freq: '106.5 FM' },
+            { dept: '38', city: 'Voiron', freq: '95.8 FM' },
+            { dept: '38', city: 'Voreppe', freq: 'DAB+' },
+            // 39 - Jura
+            { dept: '39', city: 'Dole', freq: '88.1 FM' },
+            { dept: '39', city: 'Lons-le-Saunier', freq: '89.8 FM' },
+            // 40 - Landes
+            { dept: '40', city: 'Castets', freq: 'DAB+' },
+            { dept: '40', city: 'Dax', freq: 'DAB+' },
+            { dept: '40', city: 'Labouheyre', freq: 'DAB+' },
+            { dept: '40', city: 'Mont-de-Marsan', freq: '97.4 FM' },
+            { dept: '40', city: 'Onesse-Laharie', freq: 'DAB+' },
+            { dept: '40', city: 'Saugnac-et-Muret', freq: 'DAB+' },
+            { dept: '40', city: 'Solférino', freq: 'DAB+' },
+            // 41 - Loir-et-Cher
+            { dept: '41', city: 'Blois', freq: '95.4 FM' },
+            { dept: '41', city: 'Lamotte-Beuvron', freq: 'DAB+' },
+            { dept: '41', city: 'Romorantin-Lanthenay', freq: '95.3 FM' },
+            { dept: '41', city: 'Salbris', freq: 'DAB+' },
+            { dept: '41', city: 'Vendôme', freq: '94.2 FM' },
+            // 42 - Loire
+            { dept: '42', city: 'Roanne', freq: '98 FM' },
+            { dept: '42', city: 'Saint-Étienne', freq: '106.5 FM' },
+            { dept: '42', city: 'Saint-Just-en-Chevalet', freq: 'DAB+' },
+            // 43 - Haute-Loire
+            { dept: '43', city: 'Brioude', freq: '101.9 FM' },
+            { dept: '43', city: 'Le Puy-en-Velay', freq: '95.7 FM' },
+            { dept: '43', city: 'Yssingeaux', freq: '106.8 FM' },
+            // 44 - Loire-Atlantique
+            { dept: '44', city: 'Ancenis-Saint-Géréon', freq: 'DAB+' },
+            { dept: '44', city: 'Châteaubriant', freq: '89.2 FM' },
+            { dept: '44', city: 'Derval', freq: 'DAB+' },
+            { dept: '44', city: 'Nantes', freq: '102.9 FM' },
+            { dept: '44', city: 'Saint-Nazaire', freq: '96.5 FM' },
+            // 45 - Loiret
+            { dept: '45', city: 'Courtenay', freq: 'DAB+' },
+            { dept: '45', city: 'Gien', freq: '97 FM' },
+            { dept: '45', city: 'Montargis', freq: '92 FM' },
+            { dept: '45', city: 'Orléans', freq: '95.4 FM' },
+            // 46 - Lot
+            { dept: '46', city: 'Cahors', freq: '91.7 FM' },
+            { dept: '46', city: 'Figeac', freq: '92.9 FM' },
+            { dept: '46', city: 'Saint-Céré', freq: '105.4 FM' },
+            // 47 - Lot-et-Garonne
+            { dept: '47', city: 'Agen', freq: '106.1 FM' },
+            { dept: '47', city: 'Marmande', freq: '89.4 FM' },
+            { dept: '47', city: 'Port-Sainte-Marie', freq: 'DAB+' },
+            { dept: '47', city: 'Villeneuve-sur-Lot', freq: '95.10 FM' },
+            // 48 - Lozère
+            { dept: '48', city: 'Florac Trois Rivières', freq: '93.4 FM' },
+            { dept: '48', city: 'Langogne', freq: '105.7 FM' },
+            { dept: '48', city: 'Mende', freq: '96.5 FM' },
+            // 49 - Maine-et-Loire
+            { dept: '49', city: 'Segré-en-Anjou Bleu', freq: '105.8 FM' },
+            { dept: '49', city: 'Angers', freq: '103.6 FM' },
+            { dept: '49', city: 'Cholet', freq: '91.7 FM' },
+            { dept: '49', city: 'Saumur', freq: '96.5 FM' },
+            // 50 - Manche
+            { dept: '50', city: 'Cherbourg-en-Cotentin', freq: '97.9 FM' },
+            { dept: '50', city: 'Granville', freq: '107 FM' },
+            // 51 - Marne
+            { dept: '51', city: 'Châlons-en-Champagne', freq: '96 FM' },
+            { dept: '51', city: 'Épernay', freq: '92.6 FM' },
+            { dept: '51', city: 'Reims', freq: '105 FM' },
+            { dept: '51', city: 'Sainte-Menehould', freq: 'DAB+' },
+            { dept: '51', city: 'Tilloy-et-Bellay', freq: 'DAB+' },
+            { dept: '51', city: 'Vitry-le-François', freq: '94.6 FM' },
+            // 52 - Haute-Marne
+            { dept: '52', city: 'Chaumont', freq: '89.5 FM' },
+            { dept: '52', city: 'Joinville', freq: '93 FM' },
+            { dept: '52', city: 'Langres', freq: '97.0 FM' },
+            { dept: '52', city: 'Merrey', freq: 'DAB+' },
+            { dept: '52', city: 'Perrogney-les-Fontaines', freq: 'DAB+' },
+            { dept: '52', city: 'Saint-Dizier', freq: '94.3 FM' },
+            { dept: '52', city: 'Val-de-Meuse', freq: 'DAB+' },
+            // 53 - Mayenne
+            { dept: '53', city: 'Laval', freq: '103.7 FM' },
+            // 54 - Meurthe-et-Moselle
+            { dept: '54', city: 'Colombey-les-Belles', freq: 'DAB+' },
+            { dept: '54', city: 'Nancy', freq: '95.7 FM' },
+            { dept: '54', city: 'Val de Briey', freq: 'DAB+' },
+            // 55 - Meuse
+            { dept: '55', city: 'Bar-le-Duc', freq: '90.2 FM' },
+            { dept: '55', city: 'Rarécourt', freq: 'DAB+' },
+            { dept: '55', city: 'Verdun', freq: 'DAB+' },
+            // 56 - Morbihan
+            { dept: '56', city: 'Ambon', freq: 'DAB+' },
+            { dept: '56', city: 'Elven', freq: 'DAB+' },
+            { dept: '56', city: 'Guénin', freq: 'DAB+' },
+            { dept: '56', city: 'Guer', freq: 'DAB+' },
+            { dept: '56', city: 'Josselin', freq: 'DAB+' },
+            { dept: '56', city: 'La Roche-Bernard', freq: 'DAB+' },
+            { dept: '56', city: 'Lorient', freq: '94.3 FM' },
+            { dept: '56', city: 'Ploermel', freq: '96.6 FM' },
+            { dept: '56', city: 'Ploërmel', freq: 'DAB+' },
+            { dept: '56', city: 'Sérent', freq: 'DAB+' },
+            { dept: '56', city: 'Vannes', freq: '92.8 FM' },
+            // 57 - Moselle
+            { dept: '57', city: 'Forbach', freq: 'DAB+' },
+            { dept: '57', city: 'Marange-Zondrange', freq: 'DAB+' },
+            { dept: '57', city: 'Metz', freq: '95.7 FM' },
+            { dept: '57', city: 'Saint-Avold', freq: 'DAB+' },
+            { dept: '57', city: 'Sarrebourg', freq: '94.1 FM' },
+            { dept: '57', city: 'Sarreguemines', freq: 'DAB+' },
+            { dept: '57', city: 'Thionville', freq: '95.8 FM' },
+            // 58 - Nièvre
+            { dept: '58', city: 'Cosne-Cours-sur-Loire', freq: '87.7 FM' },
+            { dept: '58', city: 'Nevers', freq: '93.2 FM' },
+            // 59 - Nord
+            { dept: '59', city: 'Cambrai', freq: 'DAB+' },
+            { dept: '59', city: 'Douai', freq: '96.2 FM' },
+            { dept: '59', city: 'Dunkerque', freq: '91.1 FM' },
+            { dept: '59', city: 'Lille', freq: '94.3 FM' },
+            { dept: '59', city: 'Maubeuge', freq: '96.3 FM' },
+            { dept: '59', city: 'Valenciennes', freq: '94.3 FM' },
+            // 60 - Oise
+            { dept: '60', city: 'Beauvais', freq: '95.9 FM' },
+            { dept: '60', city: 'Bonneuil-les-Eaux', freq: 'DAB+' },
+            { dept: '60', city: 'Chambly', freq: 'DAB+' },
+            { dept: '60', city: 'Compiègne', freq: '96.2 FM' },
+            { dept: '60', city: 'Creil', freq: 'DAB+' },
+            { dept: '60', city: 'Méru', freq: 'DAB+' },
+            { dept: '60', city: 'Noyon', freq: '97.3 FM' },
+            // 61 - Orne
+            { dept: '61', city: 'Alençon', freq: '103.7 FM' },
+            { dept: '61', city: 'Argentan', freq: '97.5 FM' },
+            { dept: '61', city: 'La Ferté-Macé', freq: '107 FM' },
+            // 62 - Pas-de-Calais
+            { dept: '62', city: 'Arras', freq: '94.3 FM' },
+            { dept: '62', city: 'Béthune', freq: '106.9 FM' },
+            { dept: '62', city: 'Boulogne-sur-Mer', freq: '92.7 FM' },
+            { dept: '62', city: 'Calais', freq: '96.6 FM' },
+            { dept: '62', city: 'Le Touquet-Paris-Plage', freq: 'DAB+' },
+            { dept: '62', city: 'Lens', freq: '106.9 FM' },
+            { dept: '62', city: 'Saint-Omer', freq: '96.5 FM' },
+            { dept: '62', city: 'Tilloy-et-Bellay', freq: 'DAB+' },
+            // 63 - Puy-de-Dôme
+            { dept: '63', city: 'Arconsat', freq: 'DAB+' },
+            { dept: '63', city: 'Clermont-Ferrand', freq: '96.2 FM' },
+            { dept: '63', city: 'Issoire', freq: '107.3 FM' },
+            { dept: '63', city: 'Thiers', freq: '107.3 FM' },
+            // 64 - Pyrénées-Atlantiques
+            { dept: '64', city: 'Bayonne', freq: '87.6 FM' },
+            { dept: '64', city: 'Biarritz', freq: '100.7 FM' },
+            { dept: '64', city: 'Oloron-Sainte-Marie', freq: '97.3 FM' },
+            { dept: '64', city: 'Pau', freq: '91.1 FM' },
+            // 65 - Hautes-Pyrénées
+            { dept: '65', city: 'Lourdes', freq: '91.1 FM' },
+            { dept: '65', city: 'Tarbes', freq: '94.2 FM' },
+            // 66 - Pyrénées-Orientales
+            { dept: '66', city: 'Perpignan', freq: '89.7 FM' },
+            { dept: '66', city: 'Prades', freq: '100.1 FM' },
+            // 67 - Bas-Rhin
+            { dept: '67', city: 'Drulingen', freq: 'DAB+' },
+            { dept: '67', city: 'Haguenau', freq: 'DAB+' },
+            { dept: '67', city: 'Saverne', freq: 'DAB+' },
+            { dept: '67', city: 'Sélestat', freq: 'DAB+' },
+            { dept: '67', city: 'Strasbourg', freq: '96 FM' },
+            // 68 - Haut-Rhin
+            { dept: '68', city: 'Colmar', freq: '88 FM' },
+            { dept: '68', city: 'Guebwiller', freq: '100.6 FM' },
+            { dept: '68', city: 'Mulhouse', freq: '100.5 FM' },
+            // 69 - Rhône
+            { dept: '69', city: 'Lyon', freq: '96.1 FM' },
+            { dept: '69', city: 'Tarare', freq: 'DAB+' },
+            { dept: '69', city: 'Villefranche-sur-Saône', freq: '106.5 FM' },
+            // 70 - Haute-Saône
+            { dept: '70', city: 'Gray', freq: '89.8 FM' },
+            { dept: '70', city: 'Vesoul', freq: '90.8 FM' },
+            // 71 - Saône-et-Loire
+            { dept: '71', city: 'Chalon-sur-Saône', freq: '107.1 FM' },
+            { dept: '71', city: 'Le Creusot', freq: '104.1 FM' },
+            { dept: '71', city: 'Mâcon', freq: '96.1 FM' },
+            { dept: '71', city: 'Tournus', freq: 'DAB+' },
+            // 72 - Sarthe
+            { dept: '72', city: 'Le Mans', freq: '90.5 FM' },
+            { dept: '72', city: 'Montval-sur-Loir', freq: '102.5 FM' },
+            { dept: '72', city: 'Sablé-sur-Sarthe', freq: '90.4 FM' },
+            { dept: '72', city: 'Saint-Denis-d\'Orques', freq: 'DAB+' },
+            // 73 - Savoie
+            { dept: '73', city: 'Albertville', freq: '101.2 FM' },
+            { dept: '73', city: 'Beaufort', freq: '94.8 FM' },
+            { dept: '73', city: 'Bourg-Saint-Maurice', freq: '96.3 FM' },
+            { dept: '73', city: 'Chambéry', freq: '100.8 FM' },
+            { dept: '73', city: 'Modane', freq: '96.6 FM' },
+            { dept: '73', city: 'Saint-Jean-de-Maurienne', freq: '100.5 FM' },
+            { dept: '73', city: 'Saint-Martin-de-Belleville', freq: '93.0 FM' },
+            { dept: '73', city: 'Valloire', freq: '102.1 FM' },
+            // 74 - Haute-Savoie
+            { dept: '74', city: 'Annecy', freq: '94.8 FM' },
+            { dept: '74', city: 'Annemasse', freq: 'DAB+' },
+            { dept: '74', city: 'Cercier', freq: 'DAB+' },
+            { dept: '74', city: 'Chamonix-Mont-Blanc', freq: '93.5 FM' },
+            { dept: '74', city: 'Combloux', freq: '90.4 FM' },
+            { dept: '74', city: 'Les Houches', freq: '103.5 FM' },
+            { dept: '74', city: 'Saint-Gervais', freq: '90.4 FM' },
+            { dept: '74', city: 'Sevrier', freq: '94.6 FM' },
+            // 75 - Paris
+            { dept: '75', city: 'Paris', freq: '96 FM' },
+            // 76 - Seine-Maritime
+            { dept: '76', city: 'Dieppe', freq: '94.3 FM' },
+            { dept: '76', city: 'Le Havre', freq: '89.6 FM' },
+            { dept: '76', city: 'Rouen', freq: '89.3 FM' },
+            // 77 - Seine-et-Marne
+            { dept: '77', city: 'Égreville', freq: 'DAB+' },
+            { dept: '77', city: 'Fontainebleau', freq: 'DAB+' },
+            { dept: '77', city: 'Grez-sur-Loing', freq: 'DAB+' },
+            { dept: '77', city: 'La Ferté-sous-Jouarre', freq: 'DAB+' },
+            { dept: '77', city: 'Meaux', freq: '93.3 FM' },
+            { dept: '77', city: 'Melun', freq: '106.9 FM' },
+            { dept: '77', city: 'Nemours', freq: 'DAB+' },
+            { dept: '77', city: 'Paris et région parisienne', freq: '96 FM' },
+            // 78 - Yvelines
+            { dept: '78', city: 'Conflans-Sainte-Honorine', freq: 'DAB+' },
+            { dept: '78', city: 'Mantes-la-Jolie', freq: '106.1 FM' },
+            { dept: '78', city: 'Paris et région parisienne', freq: '96 FM' },
+            { dept: '78', city: 'Rambouillet', freq: 'DAB+' },
+            { dept: '78', city: 'Videlles', freq: 'DAB+' },
+            // 79 - Deux-Sèvres
+            { dept: '79', city: 'Niort', freq: '98.2 FM' },
+            { dept: '79', city: 'Saint-Maixent-l\'École', freq: '98.8 FM' },
+            // 80 - Somme
+            { dept: '80', city: 'Abbeville', freq: '96.7 FM' },
+            { dept: '80', city: 'Amiens', freq: '98.4 FM' },
+            { dept: '80', city: 'Cayeux-sur-Mer', freq: '107.4 FM' },
+            { dept: '80', city: 'Péronne', freq: 'DAB+' },
+            { dept: '80', city: 'Roye', freq: 'DAB+' },
+            // 81 - Tarn
+            { dept: '81', city: 'Albi', freq: '92.4 FM' },
+            { dept: '81', city: 'Carmaux', freq: '97.5 FM' },
+            { dept: '81', city: 'Castres', freq: '87.6 FM' },
+            { dept: '81', city: 'Mazamet', freq: '87.8 FM' },
+            // 82 - Tarn-et-Garonne
+            { dept: '82', city: 'Montauban', freq: '96.1 FM' },
+            { dept: '82', city: 'Valence-d\'Agen', freq: 'DAB+' },
+            // 83 - Var
+            { dept: '83', city: 'Brignoles', freq: '107.3 FM' },
+            { dept: '83', city: 'Draguignan', freq: '107 FM' },
+            { dept: '83', city: 'Fréjus', freq: '107.3 FM' },
+            { dept: '83', city: 'Hyères', freq: '89 FM' },
+            { dept: '83', city: 'Les Adrets-de-l\'Estérel', freq: 'DAB+' },
+            { dept: '83', city: 'Pignans', freq: 'DAB+' },
+            { dept: '83', city: 'Saint Tropez', freq: '107.5 FM' },
+            { dept: '83', city: 'Saint-Raphaël', freq: '107.3 FM' },
+            { dept: '83', city: 'Toulon', freq: '89 FM' },
+            // 84 - Vaucluse
+            { dept: '84', city: 'Apt', freq: '91.7 FM' },
+            { dept: '84', city: 'Avignon', freq: '92.5 FM' },
+            { dept: '84', city: 'Cavaillon', freq: 'DAB+' },
+            // 85 - Vendée
+            { dept: '85', city: 'Challans', freq: '95.9 FM' },
+            { dept: '85', city: 'Fontenay-le-Comte', freq: '93.1 FM' },
+            { dept: '85', city: 'La Roche-sur-Yon', freq: '93.6 FM' },
+            { dept: '85', city: 'Les Herbiers', freq: 'DAB+' },
+            { dept: '85', city: 'Les Sables-d\'Olonne', freq: '102.1 FM' },
+            { dept: '85', city: 'Les Velluire-sur-Vendée', freq: 'DAB+' },
+            { dept: '85', city: 'Mareuil-sur-Lay-Dissais', freq: 'DAB+' },
+            // 86 - Vienne
+            { dept: '86', city: 'Antran', freq: 'DAB+' },
+            { dept: '86', city: 'Châtellerault', freq: 'DAB+' },
+            { dept: '86', city: 'Lusignan', freq: 'DAB+' },
+            { dept: '86', city: 'Poitiers', freq: '101.1 FM' },
+            // 87 - Haute-Vienne
+            { dept: '87', city: 'Ambazac', freq: '95.2 FM' },
+            { dept: '87', city: 'Limoges', freq: '96.7 FM' },
+            { dept: '87', city: 'Saint-Junien', freq: '96.9 FM' },
+            // 88 - Vosges
+            { dept: '88', city: 'Bulgnéville', freq: 'DAB+' },
+            { dept: '88', city: 'Epinal', freq: '95.1 FM' },
+            { dept: '88', city: 'Gerardmer', freq: '91.2 FM' },
+            { dept: '88', city: 'La Bresse', freq: '105.6 FM' },
+            { dept: '88', city: 'Le Thillot', freq: '99.5 FM' },
+            { dept: '88', city: 'Saint-Dié-des-Vosges', freq: '102.4 FM' },
+            { dept: '88', city: 'Vittel', freq: 'DAB+' },
+            // 89 - Yonne
+            { dept: '89', city: 'Auxerre', freq: '92 FM' },
+            { dept: '89', city: 'Avallon', freq: 'DAB+' },
+            { dept: '89', city: 'Bleigny-le-Carreau', freq: 'DAB+' },
+            { dept: '89', city: 'Sens', freq: '95.9 FM' },
+            // 90 - Territoire de Belfort
+            { dept: '90', city: 'Belfort', freq: '97.3 FM' },
+            // 91 - Essonne
+            { dept: '91', city: 'Corbeil-Essonnes', freq: 'DAB+' },
+            { dept: '91', city: 'Dourdan', freq: '96.2 FM' },
+            { dept: '91', city: 'Milly-la-Forêt', freq: 'DAB+' },
+            { dept: '91', city: 'Paris et région parisienne', freq: '96 FM' },
+            { dept: '91', city: 'Villebon-sur-Yvette', freq: 'DAB+' },
+            // 92 - Hauts-de-Seine
+            { dept: '92', city: 'Paris et région parisienne', freq: '96 FM' },
+            // 93 - Seine-Saint-Denis
+            { dept: '93', city: 'Paris et région parisienne', freq: '96 FM' },
+            // 94 - Val-de-Marne
+            { dept: '94', city: 'Paris et région parisienne', freq: '96 FM' },
+            // 95 - Val-d'Oise
+            { dept: '95', city: 'Beaumont-sur-Oise', freq: 'DAB+' },
+            { dept: '95', city: 'Paris et région parisienne', freq: '96 FM' },
+            // Monaco
+            { dept: 'MC', city: 'Monaco', freq: '102.1 FM' },
+            // Espagne
+            { dept: 'ES', city: 'San Sébastian', freq: '100.7 FM' }
+        ];
+
+        // --- Webradios ---
+        const webradios = [
+            { id: 'skyrock', name: 'Skyrock', stream: 'https://icecast.skyrock.net/s/natio_mp3_128k', icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%23ff3b3b"/><text x="20" y="26" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="14" fill="white">S</text></svg>', bg: 'https://skyrock.fm/resources/webradios/rap-rnb_on.png' },
+            { id: 'rap-rnb', name: 'Rap & RnB', stream: 'https://icecast.skyrock.net/s/rap_rnb_aac_128k', icon: 'https://skyrock.fm/resources/webradios/rap-rnb_on.png', bg: 'https://skyrock.fm/resources/webradios/rap-rnb_on.png' },
+            { id: 'francais', name: '100% Français', stream: 'https://icecast.skyrock.net/s/francais_aac_128k', icon: 'https://skyrock.fm/resources/webradios/francais_on.png', bg: 'https://skyrock.fm/resources/webradios/francais_on.png' },
+            { id: 'klassiks', name: 'Klassiks', stream: 'https://icecast.skyrock.net/s/klassiks_aac_128k', icon: 'https://skyrock.fm/resources/webradios/klassiks_on.png', bg: 'https://skyrock.fm/resources/webradios/klassiks_on.png' },
+            { id: 'urban', name: 'Urban', stream: 'https://icecast.skyrock.net/s/urban_music_aac_128k', icon: 'https://skyrock.fm/resources/webradios/urban-music_on.png', bg: 'https://skyrock.fm/resources/webradios/urban-music_on.png' },
+            { id: 'hit-us', name: 'Hit US', stream: 'https://icecast.skyrock.net/s/hit_us_aac_128k', icon: 'https://skyrock.fm/resources/webradios/hit-us_on.png', bg: 'https://skyrock.fm/resources/webradios/hit-us_on.png' },
+            { id: 'plm', name: 'PLM', stream: 'https://icecast.skyrock.net/s/plm_aac_128k', icon: 'https://skyrock.fm/resources/webradios/plm_on.png', bg: 'https://skyrock.fm/resources/webradios/plm_on.png' }
+        ];
+
+        let currentRadioId = 'skyrock';
+        let currentDeptFilter = 'all';
+
+        // --- Slick Carousel ---
+        function buildBgCarousel() {
+            bgCarousel.innerHTML = '';
+            webradios.forEach(radio => {
+                const slide = document.createElement('div');
+                slide.className = 'slide-item';
+                const img = document.createElement('img');
+                img.src = radio.bg;
+                img.alt = radio.name;
+                img.onerror = () => {
+                    slide.style.background = 'linear-gradient(135deg, #1a0000 0%, #330000 50%, #1a0000 100%)';
+                    img.style.display = 'none';
+                };
+                slide.appendChild(img);
+                bgCarousel.appendChild(slide);
+            });
+            $(bgCarousel).slick({
+                dots: false, arrows: false, infinite: true,
+                speed: 1200, fade: true, autoplay: true,
+                autoplaySpeed: 4000, pauseOnHover: false,
+                pauseOnFocus: false, cssEase: 'ease-in-out',
+                adaptiveHeight: false, draggable: false,
+                swipe: false, touchMove: false
+            });
+        }
+
+        // --- Visualiseur ---
+        for(let i=0; i<20; i++) {
+            let bar = document.createElement('div');
+            bar.className = 'bar-c';
+            vizBars.appendChild(bar);
+        }
+
+        // --- Carrousel webradios ---
+        function buildCarousel() {
+            carousel.innerHTML = '';
+            webradios.forEach(radio => {
+                const item = document.createElement('div');
+                item.className = `webradio-item ${radio.id === currentRadioId ? 'active' : ''}`;
+                item.dataset.radioId = radio.id;
+                const img = document.createElement('img');
+                img.className = 'webradio-icon';
+                img.src = radio.icon;
+                img.alt = radio.name;
+                img.onerror = () => {
+                    img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%23ff3b3b"/><text x="20" y="26" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="14" fill="white">?</text></svg>';
+                };
+                const name = document.createElement('span');
+                name.className = 'webradio-name';
+                name.textContent = radio.name;
+                item.appendChild(img);
+                item.appendChild(name);
+                item.addEventListener('click', () => switchRadio(radio.id));
+                carousel.appendChild(item);
+            });
+        }
+
+        // --- COMPTEUR TOTAL ---
+        function updateTotalCounter() {
+            const uniqueDepts = new Set(fmStations.map(s => s.dept));
+            stationsTotal.innerHTML = `<strong>${fmStations.length}</strong> villes dans <strong>${uniqueDepts.size}</strong> départements`;
+        }
+
+        // --- FILTRE + RECHERCHE + TRI ALPHABÉTIQUE ---
+        function buildStationsList(filter = '') {
+            stationsList.innerHTML = '';
+            
+            const depts = [...new Set(fmStations.map(s => s.dept))].sort();
+            
+            if (!document.getElementById('dept-filter')) {
+                const filterWrapper = document.createElement('div');
+                filterWrapper.className = 'dept-filter-wrapper';
+                filterWrapper.innerHTML = `
+                    <select id="dept-filter">
+                        <option value="all">Tous les départements</option>
+                        ${depts.map(d => `<option value="${d}">${d}</option>`).join('')}
+                    </select>
+                `;
+                stationsList.parentNode.insertBefore(filterWrapper, stationsList);
+                
+                document.getElementById('dept-filter').addEventListener('change', (e) => {
+                    currentDeptFilter = e.target.value;
+                    buildStationsList(filter);
+                });
+            }
+            
+            let filtered = fmStations;
+            if (currentDeptFilter !== 'all') {
+                filtered = filtered.filter(s => s.dept === currentDeptFilter);
+            }
+            if (filter) {
+                const f = filter.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.city.toLowerCase().includes(f) ||
+                    s.dept.toLowerCase().includes(f)
+                );
+            }
+            
+            filtered = [...filtered].sort((a, b) => a.city.localeCompare(b.city, 'fr'));
+            
+            const counter = document.createElement('div');
+            counter.className = 'stations-counter';
+            counter.textContent = `${filtered.length} ville${filtered.length > 1 ? 's' : ''}`;
+            stationsList.appendChild(counter);
+            
+            if (filtered.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.cssText = 'text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.8rem;';
+                empty.textContent = 'Aucune ville trouvée';
+                stationsList.appendChild(empty);
+                return;
+            }
+            
+            filtered.forEach(station => {
+                const row = document.createElement('div');
+                row.className = 'station-row';
+                
+                const left = document.createElement('div');
+                left.className = 'station-left';
+                
+                const deptBadge = document.createElement('span');
+                deptBadge.className = 'station-dept';
+                deptBadge.textContent = station.dept;
+                
+                const citySpan = document.createElement('span');
+                citySpan.className = 'station-city';
+                citySpan.textContent = station.city;
+                
+                left.appendChild(deptBadge);
+                left.appendChild(citySpan);
+                
+                const right = document.createElement('div');
+                right.className = 'station-right';
+                
+                const freqSpan = document.createElement('span');
+                freqSpan.className = 'station-freq';
+                
+                const hasFM = station.freq.includes('FM');
+                const hasDAB = station.freq.includes('DAB+');
+                
+                if (hasFM && hasDAB) {
+                    const fmValue = station.freq.replace(' / DAB+', '');
+                    freqSpan.innerHTML = `${fmValue} <span class="dab-badge">DAB+</span>`;
+                } else if (hasDAB) {
+                    freqSpan.innerHTML = '<span class="dab-badge">DAB+</span>';
+                } else {
+                    freqSpan.textContent = station.freq;
+                }
+                
+                right.appendChild(freqSpan);
+                
+                if (hasFM) {
+                    const listenBtn = document.createElement('button');
+                    listenBtn.className = 'listen-btn';
+                    listenBtn.title = `Écouter Skyrock depuis ${station.city}`;
+                    listenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        audioSource.src = 'https://icecast.skyrock.net/s/natio_mp3_128k';
+                        audio.load();
+                        audio.play().then(() => {
+                            playBtn.classList.add('active');
+                            statusText.textContent = "SYS.ONLINE";
+                            vizBars.classList.remove('paused-anim');
+                            startDataSimulation();
+                        }).catch(err => {
+                            console.log('Erreur lecture:', err);
+                            statusText.textContent = "SYS.ERROR";
+                        });
+                    });
+                    right.appendChild(listenBtn);
+                }
+                
+                row.appendChild(left);
+                row.appendChild(right);
+                stationsList.appendChild(row);
+            });
+        }
+
+        // --- Switch radio ---
+        function switchRadio(radioId) {
+            if (radioId === currentRadioId) return;
+            const radio = webradios.find(r => r.id === radioId);
+            if (!radio) return;
+            const wasPlaying = !audio.paused;
+            audioSource.src = radio.stream;
+            audio.load();
+            currentRadioId = radioId;
+            document.querySelectorAll('.webradio-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.radioId === radioId);
+            });
+            if (wasPlaying) {
+                audio.play().catch(e => {
+                    console.log('Lecture impossible:', e);
+                    statusText.textContent = "SYS.ERROR";
+                });
+            }
+        }
+
+        // --- Play ---
+        playBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play().then(() => {
+                    playBtn.classList.add('active');
+                    statusText.textContent = "SYS.ONLINE";
+                    vizBars.classList.remove('paused-anim');
+                    startDataSimulation();
+                }).catch(e => {
+                    console.log('Erreur lecture:', e);
+                    statusText.textContent = "SYS.ERROR";
+                });
+            } else {
+                audio.pause();
+                playBtn.classList.remove('active');
+                statusText.textContent = "SYS.PAUSED";
+                vizBars.classList.add('paused-anim');
+                stopDataSimulation();
+            }
+        });
+
+        // --- Volume ---
+        volumeControl.addEventListener('input', (e) => {
+            audio.volume = e.target.value;
+            volFill.style.width = (e.target.value * 100) + '%';
+        });
+
+        // --- Simulation ---
+        let dataInterval;
+        const bitrateEl = document.getElementById('bitrate');
+        const latencyEl = document.getElementById('latency');
+
+        function startDataSimulation() {
+            dataInterval = setInterval(() => {
+                bitrateEl.textContent = Math.floor(120 + Math.random() * 16);
+                latencyEl.textContent = Math.floor(10 + Math.random() * 20);
+            }, 1000);
+        }
+        function stopDataSimulation() { clearInterval(dataInterval); }
+
+        // --- Stations Panel ---
+        stationsToggle.addEventListener('click', () => {
+            replaysPanel.classList.remove('open');
+            stationsPanel.classList.toggle('open');
+            if (stationsPanel.classList.contains('open')) stationSearch.focus();
+        });
+        stationsClose.addEventListener('click', () => stationsPanel.classList.remove('open'));
+        stationSearch.addEventListener('input', (e) => buildStationsList(e.target.value));
+
+        // --- Replays Panel ---
+        replaysToggle.addEventListener('click', () => {
+            stationsPanel.classList.remove('open');
+            replaysPanel.classList.toggle('open');
+        });
+        replaysClose.addEventListener('click', () => replaysPanel.classList.remove('open'));
+
+        // --- Init ---
+        $(document).ready(function() {
+            buildBgCarousel();
+            buildCarousel();
+            updateTotalCounter();
+            buildStationsList();
+            vizBars.classList.add('paused-anim');
+            volFill.style.width = '70%';
+        });
+    </script>
+</body>
+</html>
