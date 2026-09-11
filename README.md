@@ -15,4 +15,8 @@ Radio Skyrock Paris - Interface HUD . Design .
 <img width="1803" height="786" alt="Screenshot 2026-09-12 at 01-45-25 Skyrock Paris - Interface HUD" src="https://github.com/user-attachments/assets/527e4fa4-59d6-4898-80a3-3eed0bd77199" />
 
 
-By Gleaphe 2026 .
+<div align="center">
+
+[![Gunout 2026](https://img.shields.io/badge/🇫🇷_Gunout-2026-002395?style=for-the-badge&labelColor=FFFFFF&color=ED2939)](https://github.com/gunout)
+
+</div>
