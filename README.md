@@ -353,6 +353,7 @@ Ce projet est un **lecteur non officiel** des flux publics de Skyrock. Il n'est 
 
 <img width="1803" height="786" alt="Screenshot 2026-09-12 at 01-45-25 Skyrock Paris - Interface HUD" src="https://github.com/user-attachments/assets/527e4fa4-59d6-4898-80a3-3eed0bd77199" />
 
+---
 
 <div align="center">
 
